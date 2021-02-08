@@ -327,33 +327,7 @@ int main(int argc, char *argv[]) {
       if (delay_time_us <= 0) delay_time_us = 100 * 1000;  // 1/10sec
       StoreInStream(img, delay_time_us, do_center, offscreen_canvas, global_stream_writer ? global_stream_writer : &out);
     }
-  /*
-    } else {
-      // Ok, not an image. Let's see if it is one of our streams.
-      int fd = open(filename, O_RDONLY);
-      if (fd >= 0) {
-        file_info = new FileInfo();
-        file_info->params = filename_params[filename];
-        file_info->content_stream = new rgb_matrix::FileStreamIO(fd);
-        StreamReader reader(file_info->content_stream);
-        if (reader.GetNext(offscreen_canvas, NULL)) {  // header+size ok
-          file_info->is_multi_frame = reader.GetNext(offscreen_canvas, NULL);
-          reader.Rewind();
-          if (global_stream_writer) {
-            CopyStream(&reader, global_stream_writer, offscreen_canvas);
-          }
-        } else {
-          err_msg = "Can't read as image or compatible stream";
-          delete file_info->content_stream;
-          delete file_info;
-          file_info = NULL;
-        }
-      }
-      else {
-        perror("Opening file");
-      }
-    }
-  */
+  
     if (file_info) {
       file_imgs.push_back(file_info);
     } else {
@@ -361,60 +335,11 @@ int main(int argc, char *argv[]) {
     }
   }
 
-  /*
-  if (stream_output) {
-    delete global_stream_writer;
-    delete stream_io;
-    if (file_imgs.size()) {
-      fprintf(stderr, "Done: Output to stream %s; "
-              "this can now be opened with led-image-viewer with the exact same panel configuration settings such as rows, chain, parallel and hardware-mapping\n", stream_output);
-    }
-    if (do_shuffle)
-      fprintf(stderr, "Note: -s (shuffle) does not have an effect when generating streams.\n");
-    if (do_forever)
-      fprintf(stderr, "Note: -f (forever) does not have an effect when generating streams.\n");
-    // Done, no actual output to matrix.
-    return 0;
-  }
-  */
-
-  // Some parameter sanity adjustments.
-  /*
-  if (file_imgs.empty()) {
-    // e.g. if all files could not be interpreted as image.
-    fprintf(stderr, "No image could be loaded.\n");
-    return 1;
-  } else if (file_imgs.size() == 1) {
-    // Single image: show forever.
-    file_imgs[0]->params.wait_ms = distant_future;
-  } else {
-    for (size_t i = 0; i < file_imgs.size(); ++i) {
-      ImageParams &params = file_imgs[i]->params;
-      // Forever animation ? Set to loop only once, otherwise that animation
-      // would just run forever, stopping all the images after it.
-      if (params.loops < 0 && params.anim_duration_ms == distant_future) {
-        params.loops = 1;
-      }
-    }
-  }
-  */
-
   fprintf(stderr, "Loading took %.3fs; now: Display.\n",
           (GetTimeInMillis() - start_load) / 1000.0);
 
   signal(SIGTERM, InterruptHandler);
   signal(SIGINT, InterruptHandler);
-
-  /*
-  do {
-    if (do_shuffle) {
-      std::random_shuffle(file_imgs.begin(), file_imgs.end());
-    }
-    for (size_t i = 0; i < file_imgs.size() && !interrupt_received; ++i) {
-      DisplayAnimation(file_imgs[i], matrix, offscreen_canvas);
-    }
-  } while (do_forever && !interrupt_received);
-  */
 
   do {
     DisplayAnimation(file_imgs[0], matrix, offscreen_canvas);
