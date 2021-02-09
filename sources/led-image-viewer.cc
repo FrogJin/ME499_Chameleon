@@ -1,24 +1,3 @@
-// -*- mode: c++; c-basic-offset: 2; indent-tabs-mode: nil; -*-
-// Copyright (C) 2015 Henner Zeller <h.zeller@acm.org>
-//
-// This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation version 2.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program.  If not, see <http://gnu.org/licenses/gpl-2.0.txt>
-
-// To use this image viewer, first get image-magick development files
-// $ sudo apt-get install libgraphicsmagick++-dev libwebp-dev
-//
-// Then compile with
-// $ make led-image-viewer
-
 #include "led-matrix.h"
 #include "pixel-mapper.h"
 #include "content-streamer.h"
@@ -325,7 +304,7 @@ int main(int argc, char *argv[]) {
         delay_time_us = file_info->params.wait_ms * 1000;  // single image.
       }
       if (delay_time_us <= 0) delay_time_us = 100 * 1000;  // 1/10sec
-      StoreInStream(img, delay_time_us, do_center, offscreen_canvas, global_stream_writer ? global_stream_writer : &out);
+      StoreInStream(img, delay_time_us, offscreen_canvas, global_stream_writer ? global_stream_writer : &out);
     }
   
     if (file_info) {
@@ -356,3 +335,4 @@ int main(int argc, char *argv[]) {
   // Leaking the FileInfos, but don't care at program end.
   return 0;
 }
+
