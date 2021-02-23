@@ -1,4 +1,4 @@
-CXXFLAGS=-Wall -O3 -g -Wextra -Wno-unused-parameter -D_FILE_OFFSET_BITS=64
+CXXFLAGS=-Wall -O3 -g -Wextra -Wno-unused-parameter -D_FILE_OFFSET_BITS=64 -lopencv_core -lopencv_highgui -lopencv_videoio
 OBJECTS=led-image-viewer.o
 BINARIES=led-image-viewer
 
@@ -12,6 +12,8 @@ RGB_INCDIR=$(RGB_LIB_DISTRIBUTION)/include
 RGB_LIBDIR=$(RGB_LIB_DISTRIBUTION)/lib
 RGB_LIBRARY_NAME=rgbmatrix
 RGB_LIBRARY=$(RGB_LIBDIR)/lib$(RGB_LIBRARY_NAME).a
+# OpenCV library
+OPENCV_INCDIR=/usr/include/opencv4
 LDFLAGS+=-L$(RGB_LIBDIR) -l$(RGB_LIBRARY_NAME) -lrt -lm -lpthread
 
 # Imagemagic flags, only needed if actually compiled.
@@ -25,16 +27,16 @@ $(RGB_LIBRARY): FORCE
 	$(MAKE) -C $(RGB_LIBDIR)
 
 led-image-viewer: led-image-viewer.o $(RGB_LIBRARY)
-	$(CXX) $(CXXFLAGS) led-image-viewer.o -o $@ $(LDFLAGS) $(MAGICK_LDFLAGS)
+	$(CXX) $(CXXFLAGS) led-image-viewer.o -o $@ $(LDFLAGS) $(MAGICK_LDFLAGS) `pkg-config --cflags --libs opencv4`
 
 video-viewer: video-viewer.o $(RGB_LIBRARY)
 	$(CXX) $(CXXFLAGS) video-viewer.o -o $@ $(LDFLAGS) `pkg-config --cflags --libs  libavcodec libavformat libswscale libavutil`
 
 %.o : %.cc
-	$(CXX) -I$(RGB_INCDIR) $(CXXFLAGS) -c -o $@ $<
+	$(CXX) -I$(RGB_INCDIR) -I$(OPENCV_INCDIR) $(CXXFLAGS) -c -o $@ $<
 
 led-image-viewer.o : led-image-viewer.cc
-	$(CXX) -I$(RGB_INCDIR) $(CXXFLAGS) $(MAGICK_CXXFLAGS) -c -o $@ $<
+	$(CXX) -I$(RGB_INCDIR) -I$(OPENCV_INCDIR) $(CXXFLAGS) $(MAGICK_CXXFLAGS) -c -o $@ $<
 
 # We're using a couple of deprecated functions. Pull request to update this to
 # the latest libraries is welcome.

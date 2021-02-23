@@ -21,6 +21,15 @@
 #include <Magick++.h>
 #include <magick/image.h>
 
+#include <opencv2/core/core.hpp>
+#include <opencv2/opencv.hpp>
+#include <opencv2/videoio/videoio.hpp>
+#include <opencv2/highgui/highgui.hpp>
+#include <opencv2/video.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
+
+#include <iostream>
+
 using rgb_matrix::GPIO;
 using rgb_matrix::Canvas;
 using rgb_matrix::FrameCanvas;
@@ -226,6 +235,13 @@ static int usage(const char *progname) {
 }
 
 int main(int argc, char *argv[]) {
+  cv::VideoCapture cap;	// Capture the video from webcam
+  int deviceID = 0;
+  int apiID = cv::CAP_V4L2;
+  cap.open(deviceID, apiID);
+
+  if(!cap.isOpened()) { std::cout << "Cannot open webcam" << std::endl; }
+
   // Initialize the GraphicsMagick image-processing library
   Magick::InitializeMagick(*argv);
 
