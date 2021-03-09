@@ -1,0 +1,8 @@
+prefix=/home/ubuntu/chameleon/ME499_Chameleon/ros_ws/install
+
+Name: chameleon_nav
+Description: Description of chameleon_nav
+Version: 0.0.1
+Cflags: 
+Libs: -L${prefix}/lib 
+Requires: geometry_msgs rospy

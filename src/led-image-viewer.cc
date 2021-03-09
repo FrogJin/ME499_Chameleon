@@ -41,32 +41,6 @@ typedef int64_t tmillis_t;
 
 static std::vector< cv::Vec3b > available_colors;
 
-// struct ColorCounts {
-//   int counts[9] = {0, 0, 0, 0, 0, 0, 0, 0, 0};
-//   const int N = sizeof(counts) / sizeof(int);
-
-//   int getNearest(cv::Vec3b received_color) {
-//     double min_distance = DBL_MAX;
-//     int min_idx = -1;
-
-//     for (int i = 0; i < 9; i++) {
-//       // double distance = sqrt(pow(available_colors[i].val[0] - received_color.val[0], 2.0) + pow(available_colors[i].val[1] - received_color.val[1], 2.0) + pow(available_colors[i].val[2] - received_color.val[2], 2.0));
-//       double distance = sqrt(abs(available_colors[i].val[0] - received_color.val[0]) + abs(available_colors[i].val[1] - received_color.val[1]) + abs(available_colors[i].val[2] - received_color.val[2]));
-//       if (distance < min_distance) {
-//         min_idx = i;
-//         min_distance = distance;
-//       }
-//     }
-
-//     this->counts[min_idx] += 1;
-//     return 0;
-//   }
-
-//   cv::Vec3b getMost() {
-//     return available_colors[std::distance(counts, std::max_element(counts, counts+N))];
-//   }
-// };
-
 volatile bool interrupt_received = false;
 static void InterruptHandler(int signo) {
   interrupt_received = true;
@@ -108,27 +82,6 @@ static cv::Vec3b FindNearestColor(cv::Vec3b received_color) {
 
   return nearest_color;
 }
-
-// static cv::Vec3b FindAverageColor(cv::Mat & src, int x, int y) {
-//   ColorCounts cc;
-//   // double total_b = 0;
-//   // double total_g = 0;
-//   // double total_r = 0;
-
-//   for (int i = x*5; i < (x+1)*5; i++) {
-//     for (int j = y*5; j < (y+1)*5; j++) {
-//       cv::Vec3b pixel = src.at<cv::Vec3b>(i, j);
-//       cc.getNearest(pixel);
-//       // total_b = total_b + pixel.val[0];
-//       // total_g = total_g + pixel.val[1];
-//       // total_r = total_r + pixel.val[2];
-//     }
-//   }
-  
-//   // cv::Vec3b average_color(total_b/25, total_g/25, total_r/25);
-//   // return average_color;
-//   return cc.getMost();
-// }
 
 static int usage(const char *progname) {
   fprintf(stderr, "usage: %s [options]\n", progname);
@@ -175,6 +128,7 @@ int main(int argc, char *argv[]) {
     return 1;
   }
 
+  // Set up offscreen canvas
   FrameCanvas *offscreen_canvas = canvas->CreateFrameCanvas();
 
   printf("Size: %dx%d. Hardware gpio mapping: %s\n", canvas->width(), canvas->height(), matrix_options.hardware_mapping);
@@ -189,7 +143,10 @@ int main(int argc, char *argv[]) {
   // cv::imwrite(fname, frame);
 
   // Define rectangular region of interest
-  cv::Rect ROI(120, 160, 320, 320);
+  // Start position
+  // cv::Rect ROI(310, 220, 250, 250);
+  // End Position
+  // cv::Rect ROI(140, 220, 250, 250);
   
   // *************************************************
   // Test image
@@ -308,29 +265,17 @@ int main(int argc, char *argv[]) {
 
   // *************************************************
   // Runtime
-  // tmillis_t prev_time = GetTimeInMillis();
+  const tmillis_t start_time_ms = GetTimeInMillis();
   while(cap.isOpened() && !interrupt_received) {
-    // tmillis_t curr_time = GetTimeInMillis();
-    // if(curr_time - prev_time >= 10000) {
-      // std::cout << "Frame Update" << std::endl;
-      // Capture frame
+    // 64x64 pixel matrix
+    float pixels[64][64][3];
+    tmillis_t delta_time_ms = GetTimeInMillis() - start_time_ms;
+
+    cv::Rect ROI(265-(int)((265-115)*delta_time_ms/720000), 55, 250, 250);
     cv::Mat frame;
     cap >> frame;
     // Crop frame
     cv::Mat cropped_frame(frame, ROI);
-
-    float pixels[64][64][3];
-
-    // Average Colors Approach
-    // for (int i = 0; i < 64; i++) {
-    //   for (int j = 0; j < 64; j++) {
-    //     cv::Vec3b average_color = FindAverageColor(cropped_frame, i, j);
-    //     cv::Vec3b nearest_color = FindNearestColor(average_color);
-    //     pixels[i][j][0] = nearest_color.val[0];
-    //     pixels[i][j][1] = nearest_color.val[1];
-    //     pixels[i][j][2] = nearest_color.val[2];
-    //   }
-    // }
 
     // Hough Circles Approach
     cv::Mat src;
@@ -339,27 +284,12 @@ int main(int argc, char *argv[]) {
     // printf("%d x %d\n", src.rows, src.cols);
     // HoughCircles
     cv::Mat gray;
-    cv::Mat hough_circles = src.clone();
     cv::cvtColor(src, gray, cv::COLOR_BGR2GRAY);
     cv::medianBlur(gray, gray, 5);
     std::vector< cv::Vec3f > circles;
     cv::HoughCircles(gray, circles, cv::HOUGH_GRADIENT, 1, 8, 80, 10, 2, 10);
-    // for(size_t i = 0; i < circles.size(); i++) {
-    //   cv::Vec3i c = circles[i];
-    //   cv::Point center = cv::Point(c[0], c[1]);
-    //   cv::circle(hough_circles, center, 1, cv::Scalar(0,100,100), 3, cv::LINE_AA);
-    //   int radius = c[2];
-    //   circle(hough_circles, center, radius, cv::Scalar(255,0,255), 3, cv::LINE_AA);
-    // }
-
-    // if(!cv::imwrite("img_source.png", src)) {
-    //   std::cout << "Failed to save image" << std::endl;
-    // }
-    // if(!cv::imwrite("img_hough_circles.png", hough_circles)) {
-    //   std::cout << "Failed to save image" << std::endl;
-    // }
-
-    // Get circles' center color      
+    
+    // Initialize pixel matrix
     for (int i = 0; i < 64; i++) {
       for (int j = 0; j < 64; j++) {
         pixels[i][j][0] = 0.f;
@@ -367,24 +297,62 @@ int main(int argc, char *argv[]) {
         pixels[i][j][2] = 0.f;
       }
     }
+
+    // Get circles' center color  
     for (std::size_t i = 0; i < circles.size(); i++) {
       cv::Vec3i c = circles[i];
       cv::Vec3b intensity = src.at<cv::Vec3b>(c[1], c[0]);
       // std::cout << "[" << intensity.val[0] << ", " << intensity.val[1] << ", " << intensity.val[2] << "]" << std::endl;
       cv::Vec3b display_color = FindNearestColor(intensity);
-      int x = (int)floor(c[0]/20);
-      int y = (int)floor(c[1]/20);
-      // pixels[x][y][0] = intensity.val[0];
-      // pixels[x][y][1] = intensity.val[1];
-      // pixels[x][y][2] = intensity.val[2];
+      int x = (int)floor(c[0]/15.625);
+      int y = (int)floor(c[1]/15.625);
       pixels[x][y][0] = display_color.val[0];
       pixels[x][y][1] = display_color.val[1];
       pixels[x][y][2] = display_color.val[2];
     }
 
+    // Clear black dots noise
+    for (size_t i = 0; i < 64; ++i) {
+      for (size_t j = 0; j < 64; ++j) {
+        if (pixels[i][j][0] == 0.0){
+          int is_noise = 0;
+          float cover_pixel[3] = {0.0, 0.0, 0.0};
+
+          if (i > 0 && pixels[i-1][j][0] != 0.0) {
+            is_noise += 1;
+            cover_pixel[0] = pixels[i-1][j][0];
+            cover_pixel[1] = pixels[i-1][j][1];
+            cover_pixel[2] = pixels[i-1][j][2];
+          }
+          if (i < 63 && pixels[i+1][j][0] != 0.0) {
+            is_noise += 1;
+            cover_pixel[0] = pixels[i+1][j][0];
+            cover_pixel[1] = pixels[i+1][j][1];
+            cover_pixel[2] = pixels[i+1][j][2];
+          }
+          if (j > 0 && pixels[i][j-1][0] != 0.0) {
+            is_noise += 1;
+            cover_pixel[0] = pixels[i][j-1][0];
+            cover_pixel[1] = pixels[i][j-1][1];
+            cover_pixel[2] = pixels[i][j-1][2];
+          }
+          if (j < 63 && pixels[i][j+1][0] != 0.0) {
+            is_noise += 1;
+            cover_pixel[0] = pixels[i][j+1][0];
+            cover_pixel[1] = pixels[i][j+1][1];
+            cover_pixel[2] = pixels[i][j+1][2];
+          }
+
+          if (is_noise >= 3) {
+            pixels[i][j][0] = cover_pixel[0];
+            pixels[i][j][1] = cover_pixel[1];
+            pixels[i][j][2] = cover_pixel[2];
+          }
+        }
+      }
+    }
+
     // Display Image
-    // Magick::Image img(64, 64, "BGR", Magick::CharPixel, (char *)frame.data);
-    // offscreen_canvas->Fill(0, 0, 0);
     for (size_t y = 0; y < 64; ++y) {
       for (size_t x = 0; x < 64; ++x) {
         offscreen_canvas->SetPixel(x, y, (int)pixels[x][y][2], (int)pixels[x][y][1], (int)pixels[x][y][0]);
@@ -392,9 +360,6 @@ int main(int argc, char *argv[]) {
     }
     
     offscreen_canvas = canvas->SwapOnVSync(offscreen_canvas);
-
-      // prev_time = curr_time;
-    // }
   }
 
   if (interrupt_received) {

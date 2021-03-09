@@ -1,0 +1,3 @@
+<launch>
+    <node pkg="chameleon_nav" type="move_straight" name="chameleon_move_straight" output="screen"/>
+</launch>
